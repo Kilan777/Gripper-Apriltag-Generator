@@ -19,6 +19,7 @@ const els = {
   tagIdRange: document.getElementById('tagIdRange'),
   panelName: document.getElementById('panelName'),
   squareSize: document.getElementById('squareSize'),
+  tolerance: document.getElementById('tolerance'),
   totalThickness: document.getElementById('totalThickness'),
   frontSkinThickness: document.getElementById('frontSkinThickness'),
   chamferEdge: document.getElementById('chamferEdge'),
@@ -102,6 +103,7 @@ function readState() {
     familyKey: els.family.value,
     tagId: parseInt(els.tagId.value, 10),
     squareSize: parseFloat(els.squareSize.value),
+    tolerance: parseFloat(els.tolerance.value),
     totalThickness: parseFloat(els.totalThickness.value),
     frontSkinThickness: parseFloat(els.frontSkinThickness.value),
     chamferEdge: els.chamferEdge.value,
@@ -169,6 +171,7 @@ function regenerate() {
       familyData,
       tagId: state.tagId,
       squareSize: state.squareSize,
+      tolerance: Math.max(0, state.tolerance || 0),
       totalThickness: state.totalThickness,
       frontSkinThickness: Math.max(0.05, state.frontSkinThickness || 0.25),
       chamferEdge: state.chamferEdge,
@@ -194,7 +197,7 @@ function scheduleRegenerate() {
   debounceHandle = setTimeout(regenerate, 80);
 }
 
-[els.family, els.tagId, els.panelName, els.squareSize, els.totalThickness,
+[els.family, els.tagId, els.panelName, els.squareSize, els.tolerance, els.totalThickness,
   els.frontSkinThickness, els.chamferEdge, els.chamferSize]
   .forEach((el) => el.addEventListener('input', scheduleRegenerate));
 
@@ -239,11 +242,12 @@ els.downloadBtn.addEventListener('click', () => {
 // Builds one preset's model using whatever size/thickness/chamfer settings
 // are currently set in the shared fields below, overriding only tag id,
 // family, and panel label to match the preset.
-function buildPresetModel(presetId, squareSize, totalThickness, frontSkinThickness, chamferEdge, chamferSize) {
+function buildPresetModel(presetId, squareSize, tolerance, totalThickness, frontSkinThickness, chamferEdge, chamferSize) {
   return generateModel({
     familyData: families.tag36h11,
     tagId: Number(presetId),
     squareSize,
+    tolerance,
     totalThickness,
     frontSkinThickness,
     chamferEdge,
@@ -268,14 +272,14 @@ function todayForFolderName() {
 // slot number prints in is up to what's loaded in the printer's AMS, not
 // something the file controls — the swap-slots checkbox just lets the
 // user match whichever way their own AMS happens to be loaded.
-function buildPlateObjects(squareSize, totalThickness, frontSkinThickness, chamferEdge, chamferSize, extruders) {
+function buildPlateObjects(squareSize, tolerance, totalThickness, frontSkinThickness, chamferEdge, chamferSize, extruders) {
   const presetIds = Object.keys(PRESETS);
   const cols = 2;
   const objects = [];
   let step = null;
 
   presetIds.forEach((presetId, idx) => {
-    const result = buildPresetModel(presetId, squareSize, totalThickness, frontSkinThickness, chamferEdge, chamferSize);
+    const result = buildPresetModel(presetId, squareSize, tolerance, totalThickness, frontSkinThickness, chamferEdge, chamferSize);
     if (step === null) step = result.plateSize + Math.max(6, result.plateSize * 0.05);
 
     const col = idx % cols;
@@ -298,6 +302,7 @@ function buildPlateObjects(squareSize, totalThickness, frontSkinThickness, chamf
 function readPlateParams() {
   return {
     squareSize: parseFloat(els.squareSize.value),
+    tolerance: Math.max(0, parseFloat(els.tolerance.value) || 0),
     totalThickness: parseFloat(els.totalThickness.value),
     frontSkinThickness: Math.max(0.05, parseFloat(els.frontSkinThickness.value) || 0.25),
     chamferEdge: els.chamferEdge.value,
@@ -312,7 +317,7 @@ els.downloadAllBtn.addEventListener('click', () => {
 
   let objects;
   try {
-    objects = buildPlateObjects(p.squareSize, p.totalThickness, p.frontSkinThickness, p.chamferEdge, p.chamferSize, null);
+    objects = buildPlateObjects(p.squareSize, p.tolerance, p.totalThickness, p.frontSkinThickness, p.chamferEdge, p.chamferSize, null);
   } catch (err) {
     showNotice(`Failed to build plate: ${err.message}`);
     return;
@@ -329,7 +334,7 @@ els.downloadBambuBtn.addEventListener('click', () => {
 
   let objects;
   try {
-    objects = buildPlateObjects(p.squareSize, p.totalThickness, p.frontSkinThickness, p.chamferEdge, p.chamferSize, extruders);
+    objects = buildPlateObjects(p.squareSize, p.tolerance, p.totalThickness, p.frontSkinThickness, p.chamferEdge, p.chamferSize, extruders);
   } catch (err) {
     showNotice(`Failed to build plate: ${err.message}`);
     return;

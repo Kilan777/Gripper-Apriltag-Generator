@@ -221,20 +221,24 @@ function buildTextCutout(font, text, size, mirror, tx, ty) {
   return { holeContours, plugContours };
 }
 
-// params: { familyData, tagId, squareSize, totalThickness, frontSkinThickness,
-//           chamferEdge, chamferSize, panelName, font }
+// params: { familyData, tagId, squareSize, tolerance, totalThickness,
+//           frontSkinThickness, chamferEdge, chamferSize, panelName, font }
 export function generateModel(params) {
   const {
-    familyData, tagId, squareSize, totalThickness, frontSkinThickness,
+    familyData, tagId, squareSize, tolerance, totalThickness, frontSkinThickness,
     chamferEdge, chamferSize, panelName, font,
   } = params;
 
   const grid = buildTagGrid(familyData, tagId);
   const N = grid.widthAtBorder;
   // squareSize is the OUTER edge-to-edge size of the whole panel (including
-  // the white quiet-zone margin), not just the black-bordered tag core —
-  // dividing by totalWidth (not N) makes the full plate fit that size.
-  const cellSize = squareSize / grid.totalWidth;
+  // the white quiet-zone margin), not just the black-bordered tag core.
+  // tolerance shrinks that by a fixed amount so the printed part (which
+  // otherwise comes out essentially exactly at squareSize) actually fits a
+  // slot/pocket sized to squareSize. Dividing by totalWidth (not N) makes
+  // the full plate fit the (tolerance-adjusted) target size.
+  const effectiveSquareSize = Math.max(1, squareSize - (tolerance || 0));
+  const cellSize = effectiveSquareSize / grid.totalWidth;
   const plateSize = cellSize * grid.totalWidth;
   const half = plateSize / 2;
   const margin = ((grid.totalWidth - N) / 2) * cellSize;
