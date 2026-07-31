@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AprilTag Panel Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "./js/vendor/three/build/three.module.js",
+    "three/addons/": "./js/vendor/three/examples/jsm/",
+    "three-mesh-bvh": "./js/vendor/three-mesh-bvh/index.module.js",
+    "three-bvh-csg": "./js/vendor/three-bvh-csg/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>AprilTag Panel Generator</h1>
+    <p class="sub">Two-color, 3D-printable AprilTags for robot body panels.</p>
+
+    <button id="downloadAllBtn" type="button" class="secondary" disabled>Download All 4 Panels</button>
+    <p class="footnote">
+      Pump / Muffler / Battery / E-Stop panels (tags 0–3) laid out on one
+      plate, as a single .3mf ("Latest Gripper April Tags x4 - &lt;date&gt;")
+      saved straight to your Downloads folder — no save dialog. Each panel
+      is still two objects (background + ink); assign filaments in Bambu
+      Studio as usual.
+    </p>
+
+    <button id="downloadBambuBtn" type="button" class="secondary" disabled>Download Bambu Plate (pre-colored)</button>
+    <label class="checkbox-row" for="swapSlots">
+      <input id="swapSlots" type="checkbox">
+      Swap slots (background = 2, ink = 1)
+    </label>
+    <p class="footnote">
+      Same 4-panel plate, but each part is pre-assigned to filament slot 1
+      (background) or 2 (ink) in the file itself — no manual per-object
+      filament assignment needed after import into Bambu Studio / Orca
+      Slicer. Slot numbers only pick which AMS filament a part uses, not an
+      actual color — if it comes in backwards, either flip the checkbox
+      above before re-downloading, or just swap what's loaded in slot 1 vs
+      2 in Bambu Studio. (Other slicers will just ignore this metadata and
+      treat the file like a normal multi-object 3MF.)
+    </p>
+
+    <section>
+      <label for="preset">Preset panel</label>
+      <select id="preset">
+        <option value="new" selected>New AprilTag (default)</option>
+        <option value="0">Pump Panel (Tag 0)</option>
+        <option value="1">Muffler Panel (Tag 1)</option>
+        <option value="2">Battery Panel (Tag 2)</option>
+        <option value="3">E Stop Panel (Tag 3)</option>
+      </select>
+    </section>
+
+    <section>
+      <label for="family">Tag family</label>
+      <select id="family">
+        <option value="tag36h11" selected>tag36h11 (default)</option>
+        <option value="tag25h9">tag25h9</option>
+        <option value="tag16h5">tag16h5</option>
+      </select>
+
+      <label for="tagId">Tag ID <span id="tagIdRange" class="hint"></span></label>
+      <input id="tagId" type="number" min="0" value="0" step="1">
+
+      <label for="panelName">Panel label (engraved on back)</label>
+      <input id="panelName" type="text" placeholder="e.g. Front-Left" value="">
+    </section>
+
+    <section>
+      <label for="squareSize">Panel size (mm)<span class="hint">default: 83.15mm — whole panel, outer edge to edge</span></label>
+      <input id="squareSize" type="number" min="5" step="0.5" value="83.15">
+
+      <label for="totalThickness">Total thickness (mm)<span class="hint">default: 1.25mm</span></label>
+      <input id="totalThickness" type="number" min="0.4" step="0.05" value="1.25">
+
+      <label for="frontSkinThickness">Front skin thickness (mm)<span class="hint">default: 0.25mm — 2-color pattern layer</span></label>
+      <input id="frontSkinThickness" type="number" min="0.1" step="0.05" value="0.25">
+    </section>
+
+    <section>
+      <label for="chamferEdge">Chamfer edge (back)<span class="hint">default: bottom</span></label>
+      <select id="chamferEdge">
+        <option value="bottom" selected>Bottom (default)</option>
+        <option value="top">Top</option>
+        <option value="left">Left</option>
+        <option value="right">Right</option>
+      </select>
+
+      <label for="chamferSize">Chamfer size (mm)<span class="hint">default: 1.25mm, equal legs</span></label>
+      <input id="chamferSize" type="number" min="0" step="0.05" value="1.25">
+    </section>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <button id="downloadBtn" type="button">Download 3MF</button>
+    <p class="footnote">
+      Imports as two separate objects (background + ink). In Bambu Studio,
+      select each object in the object list and assign it a different
+      filament, then slice — the two parts print together as one part.
+    </p>
+  </aside>
+
+  <main class="viewport">
+    <canvas id="canvas"></canvas>
+    <div id="loading" class="loading">Loading…</div>
+  </main>
+</div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
