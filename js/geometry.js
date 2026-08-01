@@ -186,6 +186,14 @@ function transformPoints(points, mirror, cx, cy, tx, ty) {
   });
 }
 
+// Below this land width (mm) between two adjacent letters' cut pockets, a
+// 0.4mm nozzle can't reliably lay down a separating wall — the printed wall
+// doesn't hold and the pocket floor bridges over, so the engraving comes out
+// looking filled in rather than cut (confirmed on "Muffler": the tight "ff"
+// kerning pair sat 0.63mm apart, tighter than any other letter pair used
+// across the panel labels, and was the one that printed solid).
+const MIN_GLYPH_GAP = 0.9;
+
 // Returns the letter outlines (as point loops, ready to use as Shape holes)
 // plus any glyph "counters" (the hole inside o/e/a/...) as separate point
 // loops to be re-filled as small plug solids — see header note on why this
@@ -193,21 +201,45 @@ function transformPoints(points, mirror, cx, cy, tx, ty) {
 function buildTextCutout(font, text, size, mirror, tx, ty) {
   const shapes = font.generateShapes(text, size);
 
+  const raw = shapes.map((s) => ({
+    pts: s.getPoints(6),
+    holePts: (s.holes || []).map((h) => h.getPoints(6)),
+  }));
+
+  // Nudge glyphs apart (left to right, accumulating) wherever the font's
+  // natural kerning packs them tighter than MIN_GLYPH_GAP.
+  let shift = 0;
+  let prevMaxX = null;
+  for (const { pts, holePts } of raw) {
+    let glyphMinX = Infinity;
+    let glyphMaxX = -Infinity;
+    for (const p of pts) {
+      if (p.x < glyphMinX) glyphMinX = p.x;
+      if (p.x > glyphMaxX) glyphMaxX = p.x;
+    }
+    if (prevMaxX !== null) {
+      const gap = (glyphMinX + shift) - prevMaxX;
+      if (gap < MIN_GLYPH_GAP) shift += MIN_GLYPH_GAP - gap;
+    }
+    if (shift !== 0) {
+      for (const p of pts) p.x += shift;
+      for (const hp of holePts) for (const p of hp) p.x += shift;
+    }
+    prevMaxX = glyphMaxX + shift;
+  }
+
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  const raw = shapes.map((s) => {
-    const pts = s.getPoints(6);
+  for (const { pts } of raw) {
     for (const p of pts) {
       if (p.x < minX) minX = p.x;
       if (p.x > maxX) maxX = p.x;
       if (p.y < minY) minY = p.y;
       if (p.y > maxY) maxY = p.y;
     }
-    const holePts = (s.holes || []).map((h) => h.getPoints(6));
-    return { pts, holePts };
-  });
+  }
 
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
